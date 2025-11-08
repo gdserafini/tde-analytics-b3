@@ -1,0 +1,29 @@
+services:
+  setup:
+    image: pipeline:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./datalake:/app/datalake
+    networks:
+      - pipeline_network
+    restart: "no"
+
+  etl:
+    image: pipeline:latest
+    depends_on:
+      - setup
+    command: >
+      sh -c "
+      python src/ingestion/ingest_data.py && \
+      python src/load/load_data.py
+      "
+    volumes:
+      - ./datalake:/app/datalake
+    networks:
+      - pipeline_network
+
+networks:
+  pipeline_network:
+    driver: bridge

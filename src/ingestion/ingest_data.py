@@ -1,10 +1,10 @@
 import os
-os.environ['KAGGLE_CONFIG_DIR'] = os.path.abspath('../..')
+os.environ['KAGGLE_CONFIG_DIR'] = '/app/.kaggle'
 
 from kaggle.api.kaggle_api_extended import KaggleApi
 
 
-PATH = '../../datalake/tmp'
+PATH = '/app/datalake/tmp'
 
 
 def _data_exists() -> bool:

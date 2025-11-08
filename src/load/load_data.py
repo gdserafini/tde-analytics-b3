@@ -3,7 +3,7 @@ from pyspark.sql.functions import substring
 from pathlib import Path
 
 
-PATH = '../../datalake'
+PATH = '/app/datalake'
 
 
 def _data_loaded() -> bool:
