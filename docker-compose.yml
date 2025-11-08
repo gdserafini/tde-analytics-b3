@@ -10,7 +10,7 @@ services:
       - pipeline_network
     restart: "no"
 
-  etl:
+  elt:
     image: pipeline:latest
     depends_on:
       - setup
