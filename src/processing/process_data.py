@@ -4,6 +4,10 @@ from pyspark.sql.functions import (
     lit, col, regexp_replace
 )
 import json
+import os
+
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def format_date(df: Any) -> Any:
@@ -12,13 +16,13 @@ def format_date(df: Any) -> Any:
         make_date(
             substring(df['Trading Date'], 1, 4),
             substring(df['Trading Date'], 5, 2),
-            substring(df['Trading Date'], 6, 2)
+            substring(df['Trading Date'], 7, 2)
         )
     )
     return df
 
 def format_bdi(df: Any) -> Any:
-    with open('bdi_map.json', 'r') as f:
+    with open(os.path.join(BASE_DIR, 'bdi_map.json'), 'r') as f:
         map_bdi = json.load(f)
     mapping_bdi = create_map(
         [lit(x) for kv in map_bdi.items() for x in kv]
@@ -34,7 +38,7 @@ def format_bdi(df: Any) -> Any:
     return df
 
 def format_spec(df: Any) -> Any:
-    with open('spec_map.json', 'r') as f:
+    with open(os.path.join(BASE_DIR, 'spec_map.json'), 'r') as f:
         map_spec = json.load(f)
     mapping_spec = create_map(
         [lit(x) for kv in map_spec.items() for x in kv]
