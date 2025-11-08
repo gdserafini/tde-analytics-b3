@@ -2,3 +2,4 @@ datalake
 kaggle.json
 .venv
 **/view.ipynb
+__pycache__
