@@ -1,3 +1,4 @@
 datalake
 kaggle.json
 .venv
+**/view.ipynb
