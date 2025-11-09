@@ -5,6 +5,9 @@ from pyspark.sql.functions import (
 )
 import json
 import os
+import pandas as pd
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.model_selection import train_test_split
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -66,3 +69,49 @@ def remove_outliers(df: Any, columns: list) -> Any:
 def remove_duplicates(df: Any) -> Any:
     df = df.dropDuplicates()
     return df
+
+def remove_nan(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.dropna()
+    return df
+
+def norm_numeric(df: pd.DataFrame, columns: list) -> pd.DataFrame:
+    scaler = StandardScaler()
+
+    for column in columns:
+        new_column = f'{column}-norm'
+        df[new_column] = scaler.fit_transform(df[[column]])
+    return df
+
+def norm_cat(df: pd.DataFrame, columns: list) -> pd.DataFrame:
+    encoder = OneHotEncoder(
+        sparse_output=False, 
+        drop='first', 
+        handle_unknown='ignore'
+    )
+    valid_columns = [col for col in columns if col in df.columns]
+    encoded_array = encoder.fit_transform(df[valid_columns])
+    encoded_cols = encoder.get_feature_names_out(valid_columns)
+    df_encoded = pd.concat(
+        [
+            df.drop(columns=valid_columns).reset_index(drop=True),
+            pd.DataFrame(encoded_array, columns=encoded_cols)
+        ], 
+        axis=1
+    )
+    return df_encoded
+
+def split_data(
+    df: pd.DataFrame, 
+    target_column: str,
+    test_size: float = 0.2, 
+    random_state: int = 42
+) -> tuple:
+    X = df.drop(columns=[target_column])
+    y = df[target_column]
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, 
+        test_size = test_size, 
+        random_state = random_state, 
+        stratify = y if y.nunique() < 10 else None
+    )
+    return X_train, X_test, y_train, y_test
