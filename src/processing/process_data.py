@@ -48,3 +48,21 @@ def format_spec(df: Any) -> Any:
         mapping_spec[col('Specification').cast('string')]
     )
     return df
+
+def to_numeric(df: Any, columns: list) -> Any:
+    for column in columns:
+        df = df.withColumn(column, col(f"`{column}`").cast('double'))
+    return df
+
+def remove_outliers(df: Any, columns: list) -> Any:
+    for column in columns:
+        q1, q3 = df.approxQuantile(f"`{column}`", [0.25, 0.75], 0.0)
+        iqr = q3 - q1
+        lower = q1 - 1.5 * iqr
+        upper = q3 + 1.5 * iqr
+        df = df.filter((col(f"`{column}`") >= lower) & (col(f"`{column}`") <= upper))
+    return df
+
+def remove_duplicates(df: Any) -> Any:
+    df = df.dropDuplicates()
+    return df
