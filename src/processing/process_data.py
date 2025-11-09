@@ -6,8 +6,10 @@ from pyspark.sql.functions import (
 import json
 import os
 import pandas as pd
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
-from sklearn.model_selection import train_test_split
+from pyspark.ml.feature import (
+    StringIndexer, OneHotEncoder, VectorAssembler, StandardScaler
+)
+from pyspark.ml import Pipeline
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -70,48 +72,43 @@ def remove_duplicates(df: Any) -> Any:
     df = df.dropDuplicates()
     return df
 
-def remove_nan(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.dropna()
-    return df
-
-def norm_numeric(df: pd.DataFrame, columns: list) -> pd.DataFrame:
-    scaler = StandardScaler()
-
-    for column in columns:
-        new_column = f'{column}-norm'
-        df[new_column] = scaler.fit_transform(df[[column]])
-    return df
-
-def norm_cat(df: pd.DataFrame, columns: list) -> pd.DataFrame:
-    encoder = OneHotEncoder(
-        sparse_output=False, 
-        drop='first', 
-        handle_unknown='ignore'
+def prep_ml(df: Any) -> Any:
+    df = df.toDF(*[c.replace(".", "").replace(" ", "_") for c in df.columns])
+    numeric_columns = [
+        'Opening_Price', 'Max_Price', 'Min_Price',
+        'Mean_Price', 'Last_Trade_Price', 'Best_Purshase_Order_Price',
+        'Best_Purshase_Sale_Price', 'Numbor_Of_Trades', 'Number_Of_Traded_Stocks',
+        'Volume_Of_Traded_Stocks'
+    ]
+    cat_cols = [
+        "Currency", "Market_Type", "Trade_Name",
+        "Specification_Name", "BDI_Code_Name"
+    ]
+    for c in numeric_columns:
+        df = df.withColumn(c, regexp_replace(col(c), ",", ".").cast("double"))
+    indexers = [
+        StringIndexer(inputCol=c, outputCol=f"{c}_idx", handleInvalid="keep") 
+        for c in cat_cols
+    ]
+    encoders = [
+        OneHotEncoder(inputCol=f"{c}_idx", outputCol=f"{c}_vec") 
+        for c in cat_cols
+    ]
+    feature_cols = [
+        *numeric_columns,
+        *[f"{c}_vec" for c in cat_cols]
+    ]
+    assembler = VectorAssembler(
+        inputCols=feature_cols,
+        outputCol="features_raw"
     )
-    valid_columns = [col for col in columns if col in df.columns]
-    encoded_array = encoder.fit_transform(df[valid_columns])
-    encoded_cols = encoder.get_feature_names_out(valid_columns)
-    df_encoded = pd.concat(
-        [
-            df.drop(columns=valid_columns).reset_index(drop=True),
-            pd.DataFrame(encoded_array, columns=encoded_cols)
-        ], 
-        axis=1
+    scaler = StandardScaler(
+        inputCol="features_raw",
+        outputCol="features",
+        withStd=True,
+        withMean=False
     )
-    return df_encoded
-
-def split_data(
-    df: pd.DataFrame, 
-    target_column: str,
-    test_size: float = 0.2, 
-    random_state: int = 42
-) -> tuple:
-    X = df.drop(columns=[target_column])
-    y = df[target_column]
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, 
-        test_size = test_size, 
-        random_state = random_state, 
-        stratify = y if y.nunique() < 10 else None
-    )
-    return X_train, X_test, y_train, y_test
+    pipeline = Pipeline(stages=indexers + encoders + [assembler, scaler])
+    model_prep = pipeline.fit(df)
+    df_prep = model_prep.transform(df)
+    return df_prep

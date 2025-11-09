@@ -19,7 +19,7 @@ Após o armazenamento dos dados no Data Lake, é necessário configurar o ambien
 
 Na pasta src/quering/ existe um arquivo chamado quering.ipynb que realiza a extração dos dados para os casos de uso de Analytics, esses dados devem ser salvos em datalake/serving/.<br><br>
 Para a aplicação das análises e treinamento/inferênicas dos modelos de ML, os dados devem ser lidos da pasta datalake/serving/, considerando que nesta pasta os dados estarão processados para serem utilizados.<br><br>
-Os dados do Data Lake são armazenados no formato parquet particionados por ano e mês, já os dados disponibilizados na Serving Layer em csv.
+Os dados do Data Lake são armazenados no formato parquet particionados por ano e mês, já os dados disponibilizados na Serving Layer podem ser csv ou parquet dependendo da necessidade.
 
 ### Equipe
 Gabriel Ribeiro Estefanski<br>
